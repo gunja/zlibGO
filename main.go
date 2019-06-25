@@ -43,28 +43,15 @@ func main() {
 
     var zLibObj zlib.Zlib
     zlib.Zlib_init(&zLibObj)
-    tailDec := zlib.Compress(&zLibObj, compressed[HeaderLen:], len(compressed) - HeaderLen )
-    tailEnc := zlib.Decompress(&zLibObj, decompressed[HeaderLen:], len(decompressed) - HeaderLen)
-
-    compressionPassed := true
-    for i :=0; i < len( tailDec ); i++ {
-        if tailDec[i] != compressed[i + HeaderLen] {
-            fmt.Println("mismatch in Compressed out at subposition ", i, " : expected ",
-                compressed[i + HeaderLen], "   but got", tailDec[i] )
-            compressionPassed = false
-        }
-    }
-    if compressionPassed {
-        fmt.Println("Check of compression passed")
-    } else {
-        fmt.Println("Failed check of compression" )
-    }
+    // no ideas why len-header - 5 - 16 times 8
+    tailDec := zlib.Decompress(&zLibObj, compressed[HeaderLen:], (len(compressed) - HeaderLen - 5 - 16) * 8 )
 
     decompressionPassed := true
-    for i :=0; i < len( tailEnc ); i++ {
-        if tailEnc[i] != decompressed[i + HeaderLen] {
+    fmt.Println("Decompressed Original len =", len( decompressed), " (w/o header ", len( decompressed) - HeaderLen, ") and len of decompressed resulted ", len( tailDec ))
+    for i :=0; i < len( tailDec ) && i + HeaderLen < len(decompressed) ; i++ {
+        if tailDec[i] != decompressed[i + HeaderLen] {
             fmt.Println("mismatch in Decompressed out at subposition ", i, " : expected ",
-                decompressed[i + HeaderLen], "   but got", tailEnc[i] )
+                decompressed[i + HeaderLen], "   but got", tailDec[i] )
             decompressionPassed = false
         }
     }
@@ -72,6 +59,22 @@ func main() {
         fmt.Println("Check of decompression passed")
     } else {
         fmt.Println("Failed check of decompression" )
+    }
+
+    tailEnc := zlib.Compress(&zLibObj, decompressed[HeaderLen:], len(decompressed) - HeaderLen )
+    compressionPassed := true
+    fmt.Println("Compressed Original len =", len( compressed), " w/o header is ", len( compressed) - HeaderLen, "  and len of decompressed resulted ", len( tailEnc ))
+    for i :=0; i < len( tailEnc ) && i + HeaderLen < len( compressed); i++ {
+        if tailEnc[i] != compressed[i + HeaderLen] {
+            fmt.Println("mismatch in Decompressed out at subposition ", i, " : expected ",
+                compressed[i + HeaderLen], "   but got", tailEnc[i] )
+            compressionPassed = false
+        }
+    }
+    if compressionPassed {
+        fmt.Println("Check of compression passed")
+    } else {
+        fmt.Println("Failed check of compression" )
     }
 
 
