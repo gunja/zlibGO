@@ -43,8 +43,8 @@ func main() {
 
     var zLibObj zlib.Zlib
     zlib.Zlib_init(&zLibObj)
-    tailDec := zlib.Compress(&zLibObj, compressed[HeaderLen+1:], len(compressed) - HeaderLen )
-    tailEnc := zlib.Decompress(&zLibObj, decompressed[HeaderLen+1:], len(decompressed) - HeaderLen)
+    tailDec := zlib.Compress(&zLibObj, compressed[HeaderLen:], len(compressed) - HeaderLen )
+    tailEnc := zlib.Decompress(&zLibObj, decompressed[HeaderLen:], len(decompressed) - HeaderLen)
 
     compressionPassed := true
     for i :=0; i < len( tailDec ); i++ {
