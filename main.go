@@ -7,8 +7,9 @@ import (
 
 func main() {
     fmt.Println("Hello")
-/*
-    compressed :=[]uint8  {0x39, 0x3, 0xdc, 0x2, 0x9a, 0x0,
+    const HeaderLen int= 28
+
+    compressedIn :=[]uint8  {0x39, 0x3, 0xdc, 0x2, 0x9a, 0x0,
             0x0, 0x0, 0x21, 0x17, 0x8, 0x5d, 0x1,
             0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0x0,
             0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -19,7 +20,7 @@ func main() {
             0x0, 0x1, 0x2a, 0xfd, 0xab, 0xef, 0x81,
             0x10, 0xf1, 0x8, 0xc9, 0x6, 0xde, 0x7e,
             0x90, 0xea, 0xa1 }
-    decompressed := []uint8 { 0x39, 0x3, 0xdc, 0x2, 0x9a, 0x0,
+    decompressedIn := []uint8 { 0x39, 0x3, 0xdc, 0x2, 0x9a, 0x0,
             0x0, 0x0, 0x21, 0x17, 0x8, 0x5d, 0x1,
             0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0x0,
             0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -29,10 +30,50 @@ func main() {
             0x69, 0x59, 0x9a, 0x67, 0x0, 0x0, 0x0, 0x0,
             0x0, 0x0, 0x0, 0x0, 0xf1, 0x8, 0xc9, 0x6,
             0xde, 0x7e, 0x90, 0xea, 0xa1 }
-*/
-    zlib.Zlib_init()
-    zlib.Compress()
-    zlib.Decompress()
+
+    compressed := make( []int8, len( compressedIn ))
+    for i, v := range compressedIn {
+        compressed[i] = int8( v)
+    }
+
+    decompressed := make( []int8, len(decompressedIn ))
+    for i,v := range decompressedIn {
+        decompressed[i] = int8( v)
+    }
+
+    var zLibObj zlib.Zlib
+    zlib.Zlib_init(&zLibObj)
+    tailDec := zlib.Compress(&zLibObj, compressed[HeaderLen+1:], len(compressed) - HeaderLen )
+    tailEnc := zlib.Decompress(&zLibObj, decompressed[HeaderLen+1:], len(decompressed) - HeaderLen)
+
+    compressionPassed := true
+    for i :=0; i < len( tailDec ); i++ {
+        if tailDec[i] != compressed[i + HeaderLen] {
+            fmt.Println("mismatch in Compressed out at subposition ", i, " : expected ",
+                compressed[i + HeaderLen], "   but got", tailDec[i] )
+            compressionPassed = false
+        }
+    }
+    if compressionPassed {
+        fmt.Println("Check of compression passed")
+    } else {
+        fmt.Println("Failed check of compression" )
+    }
+
+    decompressionPassed := true
+    for i :=0; i < len( tailEnc ); i++ {
+        if tailEnc[i] != decompressed[i + HeaderLen] {
+            fmt.Println("mismatch in Decompressed out at subposition ", i, " : expected ",
+                decompressed[i + HeaderLen], "   but got", tailEnc[i] )
+            decompressionPassed = false
+        }
+    }
+    if decompressionPassed {
+        fmt.Println("Check of decompression passed")
+    } else {
+        fmt.Println("Failed check of decompression" )
+    }
+
 
     fmt.Println("Done")
 }

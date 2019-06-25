@@ -3,7 +3,7 @@ package zlib
 type Zlib struct {
     enc []uint32
     jump []Zlib
-    val uint8
+    val int8
 }
 
 func Zlib_init(  obj *Zlib) {
@@ -27,7 +27,7 @@ func Zlib_init(  obj *Zlib) {
         if dec[i] > 0xFF {
             obj.jump[i].jump = obj.jump[ ((dec[i] - base )/ 4) : ]
         } else {
-            obj.jump[i].val = uint8(dec[i])
+            obj.jump[i].val = int8(dec[i])
             obj.jump[i].jump = nil
             //asserts?
         }
@@ -39,28 +39,28 @@ func zlib_compressed_size( sz uint32) uint32 {
     return (sz + 7) / 8
 }
 
-func jmpBit( table []uint8, i uint) uint8 {
+func jmpBit( table []int8, i uint) int8 {
     return (table[i/8] >> ( i & 7)) & 1
 }
 
-func compressSub(fourBytes [4]uint8, read uint32, elem uint32, out []uint8 ) (outA []uint8, state bool ){
+func compressSub(fourBytes [4]int8, read uint32, elem uint32, out []int8 ) (outA []int8, state bool ){
     state = true
     if zlib_compressed_size( elem ) > 4 {
         state = false
         return
     }
-    outA = make( []uint8, len( out))
+    outA = make( []int8, len( out))
     copy( outA, out)
     var i uint32
     for i= 0; i < elem; i++ {
         var shift uint8 = uint8( (read + i) &7 )
         var v uint32 = (read + i) / 8
-        var inv_mask uint8 = 0xFF ^ (1 << shift)
+        inv_mask := int8( uint8(0xFF ^ (1 << shift)))
         if int(v) > len( outA) {
             if int(v) < cap( outA) {
                 outA = outA[:v]
             } else {
-                t := make([]uint8, v)
+                t := make([]int8, v)
                 copy( t, outA)
                 outA = t
             }
@@ -70,20 +70,20 @@ func compressSub(fourBytes [4]uint8, read uint32, elem uint32, out []uint8 ) (ou
     return
 }
 
-func Compress( zlibObj * Zlib, in []uint8, in_sz uint32 ) ( out []uint8) {
-    out = make( []uint8, 1)
+func Compress( zlibObj * Zlib, in []int8, in_sz int ) ( out []int8) {
+    out = make( []int8, 1)
     var read uint32 = 0
-    var i uint32
+    var i int
     for i=0; i < in_sz; i++ {
-        elem := zlibObj.enc[ uint32(in[i]) + 0x180 ]
-        index := uint32(in[i]) + 0x80
+        elem := zlibObj.enc[ uint32( int32(in[i]) + 0x180) ]    // cast to int32 so that no overflow when + x180; cast to unsigned afterwards to use as subscript index
+        index := uint32( int32(in[i]) + 0x80 )
         // assert(index < zlib.enc.size())
         v := zlibObj.enc[index]
-        var fourB [4]uint8
-        fourB[0] = uint8(v & 0xFF)
-        fourB[1] = uint8((v>>8) & 0xFF)
-        fourB[2] = uint8((v>>16) & 0xFF)
-        fourB[3] = uint8((v>>24) & 0xFF)
+        var fourB [4]int8
+        fourB[0] = int8( uint8(v & 0xFF))
+        fourB[1] = int8( uint8((v>>8) & 0xFF))
+        fourB[2] = int8( uint8((v>>16) & 0xFF))
+        fourB[3] = int8( uint8((v>>24) & 0xFF))
         //var state bool
         //out, state = compressSub( fourB, read, elem, out[1:] )
         out, _ = compressSub( fourB, read, elem, out[1:] )
@@ -93,15 +93,15 @@ func Compress( zlibObj * Zlib, in []uint8, in_sz uint32 ) ( out []uint8) {
     return
 }
 
-func Decompress(ZlibObj *Zlib, in []uint8, inSize uint32) (out []uint8) {
-    out = make( []uint8, 0)
+func Decompress(ZlibObj *Zlib, in []int8, inSize int) (out []int8) {
+    out = make( []int8, 0)
     if ( in[0] != 1 ) {
         return
     }
 
     data := in[1:]
     jmp := ZlibObj.jump[0]
-    var i uint32
+    var i int
     for i =1; i < inSize; i++ {
         jmp = jmp.jump[ jmpBit( data, uint(i)) ]
         // assert
